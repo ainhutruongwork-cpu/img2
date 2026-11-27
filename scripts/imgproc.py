@@ -1,5 +1,4 @@
-hello
-  x"""Re-encode an image with Pillow (decode -> encode) and audit metadata before/after.
+"""Re-encode an image with Pillow (decode -> encode) and audit metadata before/after.
 
 Rules: JPEG q=100, 4:4:4, optimize, pixel size unchanged, EXIF orientation applied,
 ICC profile kept, personal metadata dropped, copyright/creator attribution kept.
