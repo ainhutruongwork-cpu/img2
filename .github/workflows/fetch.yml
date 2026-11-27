@@ -1,0 +1,41 @@
+name: Fetch and process Etsy images
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "test = 5 images, no commit (report artifact only); full = all images + commit"
+        type: choice
+        options: [test, full]
+        default: test
+permissions:
+  contents: write
+concurrency: fetch-images
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Run pipeline
+        env:
+          ETSY_API_KEY: ${{ secrets.ETSY_API_KEY }}
+        run: |
+          if [ "${{ inputs.mode }}" = "test" ]; then
+            python scripts/pipeline.py --shop EnjoyingCraft --out test-output --manifest test-manifest.json --max-images 5
+          else
+            python scripts/pipeline.py --shop EnjoyingCraft
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: reports, path: "reports/" }
+      - name: Commit results (full mode only)
+        if: inputs.mode == 'full'
+        run: |
+          git config user.name "img2-bot"; git config user.email "img2-bot@users.noreply.github.com"
+          git add listings manifest.json reports backup
+          git diff --cached --quiet || git commit -m "Update processed images"
+          git pull --rebase origin main && git push origin HEAD:main
